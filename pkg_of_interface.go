@@ -17,6 +17,9 @@ func NewInterface(name string, it *ast.InterfaceType) *Interface {
 		Name: name,
 	}
 }
+func (it *Interface) IsExport() bool {
+	return IsExport(it.Name)
+}
 func (it *Interface) String() string {
 	w := bytes.NewBuffer(make([]byte, 0, 1024))
 	_, e := it.Output(w, ``, ``)

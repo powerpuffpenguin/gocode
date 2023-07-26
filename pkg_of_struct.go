@@ -35,16 +35,19 @@ func NewStruct(name string, st *ast.StructType) *Struct {
 		Fields: fields,
 	}
 }
+func (s *Struct) IsExport() bool {
+	return IsExport(s.Name)
+}
 func (s *Struct) String() string {
 	w := bytes.NewBuffer(make([]byte, 0, 1024))
-	_, e := s.Output(w, ``, ``)
+	_, e := s.Output(w, ``, ``, false)
 	if e != nil {
 		panic(e)
 	}
 	b := w.Bytes()
 	return BytesToString(b)
 }
-func (s *Struct) Output(writer io.Writer, prefix, indent string) (n int64, e error) {
+func (s *Struct) Output(writer io.Writer, prefix, indent string, all bool) (n int64, e error) {
 	w := writerTo{w: writer}
 	_, e = w.WriteString(prefix + `type ` + s.Name + " struct {\n")
 	if e != nil {
@@ -54,6 +57,9 @@ func (s *Struct) Output(writer io.Writer, prefix, indent string) (n int64, e err
 	p := prefix
 	prefix += indent
 	for _, node := range s.Fields {
+		if !all && !node.IsExport() {
+			continue
+		}
 		w.WriteString(prefix + node.Output("\t") + "\n")
 	}
 	_, e = w.WriteString(p + "}\n")

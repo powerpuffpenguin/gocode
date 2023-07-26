@@ -3,6 +3,7 @@ package gocode
 import (
 	"go/ast"
 	"reflect"
+	"strings"
 )
 
 type Field struct {
@@ -18,6 +19,14 @@ func NewField(name string, filed *ast.Field) *Field {
 }
 func (f *Field) String() string {
 	return f.Output(" ")
+}
+func (f *Field) IsExport() bool {
+	if f.Name == `` {
+		s := NewTypeExpr(f.AST.Type).TypeString()
+		s = strings.TrimLeft(s, `*`)
+		return IsExport(s)
+	}
+	return IsExport(f.Name)
 }
 
 // 輸出字段定義

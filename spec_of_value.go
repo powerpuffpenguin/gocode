@@ -14,7 +14,18 @@ func NewValueSpec(spec *ast.ValueSpec) *ValueSpec {
 		Spec: spec,
 	}
 }
-func (v *ValueSpec) Output() (s string, e error) {
+func (v *ValueSpec) IsExport() bool {
+	for _, name := range v.Spec.Names {
+		if IsExport(name.Name) {
+			return true
+		}
+	}
+	return false
+}
+func (v *ValueSpec) Output(all bool) (s string, e error) {
+	if !all && !v.IsExport() {
+		return
+	}
 	var w bytes.Buffer
 	spec := v.Spec
 	for i, name := range spec.Names {
@@ -24,7 +35,11 @@ func (v *ValueSpec) Output() (s string, e error) {
 				return
 			}
 		}
-		_, e = w.WriteString(name.Name)
+		if IsExport(name.Name) {
+			_, e = w.WriteString(name.Name)
+		} else {
+			_, e = w.WriteString(`_`)
+		}
 		if e != nil {
 			return
 		}

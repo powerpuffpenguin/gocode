@@ -14,7 +14,18 @@ func NewConst(specs []ast.Spec) *Const {
 		Specs: specs,
 	}
 }
-func (c *Const) Output(writer io.Writer, prefix, indent string) (n int64, e error) {
+func (c *Const) IsExport() bool {
+	for _, a := range c.Specs {
+		spec := a.(*ast.ValueSpec)
+		for _, name := range spec.Names {
+			if IsExport(name.Name) {
+				return true
+			}
+		}
+	}
+	return false
+}
+func (c *Const) Output(writer io.Writer, prefix, indent string, all bool) (n int64, e error) {
 	w := writerTo{w: writer}
 	specs := c.Specs
 	var s string
@@ -25,7 +36,7 @@ func (c *Const) Output(writer io.Writer, prefix, indent string) (n int64, e erro
 			return
 		}
 		spec := specs[0].(*ast.ValueSpec)
-		s, e = NewValueSpec(spec).Output()
+		s, e = NewValueSpec(spec).Output(all)
 		if e != nil {
 			n = w.n
 			return
@@ -42,7 +53,7 @@ func (c *Const) Output(writer io.Writer, prefix, indent string) (n int64, e erro
 			return
 		}
 		for _, spec := range specs {
-			s, e = NewValueSpec(spec.(*ast.ValueSpec)).Output()
+			s, e = NewValueSpec(spec.(*ast.ValueSpec)).Output(all)
 			if e != nil {
 				n = w.n
 				return

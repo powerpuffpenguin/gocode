@@ -15,6 +15,9 @@ func NewAlias(name string, expr ast.Expr) *Alias {
 		Name: name,
 	}
 }
+func (a *Alias) IsExport() bool {
+	return IsExport(a.Name)
+}
 func (a *Alias) String() string {
 	return `type ` + a.Name + ` ` + NewTypeExpr(a.Expr).TypeString()
 }

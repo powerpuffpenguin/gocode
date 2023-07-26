@@ -6,6 +6,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"sync"
 )
 
 type SS io.ByteReader
@@ -19,7 +20,7 @@ const (
 	S1
 	S3 = iota + 10*10
 	S4
-	S5, S6 = 7, 9
+	S5, s6 = 7, 9
 )
 
 func abc() (int, int) {
@@ -48,6 +49,11 @@ var (
 )
 
 var ErrK0 = errors.New(`ko`)
+var P0 = &sync.Pool{}
+var P1 = sync.Pool{New: func() any {
+	b := make([]byte, 8192)
+	return &b
+}}
 
 type Callback func(data string) bool
 type KO interface {
@@ -98,3 +104,7 @@ func (s *Server) Serve() (e error) {
 func (s Server) abc() (e error) {
 	return
 }
+
+type animal struct{}
+
+func (a *animal) Eat() {}

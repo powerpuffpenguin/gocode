@@ -14,7 +14,22 @@ func NewVar(specs []ast.Spec) *Var {
 		Specs: specs,
 	}
 }
-func (v *Var) Output(writer io.Writer, prefix, indent string) (n int64, e error) {
+func (v *Var) IsExport() bool {
+	for _, a := range v.Specs {
+		spec := a.(*ast.ValueSpec)
+		for _, name := range spec.Names {
+			if IsExport(name.Name) {
+				return true
+			}
+		}
+	}
+	return false
+}
+func (v *Var) Output(writer io.Writer, prefix, indent string, all bool) (n int64, e error) {
+	if !all && !v.IsExport() {
+		return
+	}
+
 	w := writerTo{w: writer}
 	specs := v.Specs
 	var s string
@@ -24,9 +39,8 @@ func (v *Var) Output(writer io.Writer, prefix, indent string) (n int64, e error)
 			n = w.n
 			return
 		}
-
 		spec := specs[0].(*ast.ValueSpec)
-		s, e = NewValueSpec(spec).Output()
+		s, e = NewValueSpec(spec).Output(all)
 		if e != nil {
 			n = w.n
 			return
@@ -43,7 +57,7 @@ func (v *Var) Output(writer io.Writer, prefix, indent string) (n int64, e error)
 			return
 		}
 		for _, spec := range specs {
-			s, e = NewValueSpec(spec.(*ast.ValueSpec)).Output()
+			s, e = NewValueSpec(spec.(*ast.ValueSpec)).Output(all)
 			if e != nil {
 				n = w.n
 				return

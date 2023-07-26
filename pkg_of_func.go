@@ -13,6 +13,16 @@ func NewFunc(expr *ast.FuncDecl) *Func {
 		Expr: expr,
 	}
 }
+func (f *Func) IsExport() bool {
+	expr := f.Expr
+	if !IsExport(expr.Name.Name) {
+		return false
+	} else if expr.Recv == nil {
+		return true
+	}
+	field := expr.Recv.List[0]
+	return NewField(``, field).IsExport()
+}
 func (f *Func) String() string {
 	var (
 		expr = f.Expr
@@ -25,5 +35,4 @@ func (f *Func) String() string {
 		decl = `func (` + NewField(``, field).String() + `) `
 	}
 	return decl + expr.Name.Name + NewFuncType(expr.Type).ParamsAndResults()
-
 }

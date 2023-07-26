@@ -93,14 +93,14 @@ func NewFile(name string, f *ast.File) *File {
 }
 func (f *File) String() string {
 	w := bytes.NewBuffer(make([]byte, 0, 1024))
-	_, e := f.Output(w, ``, ``)
+	_, e := f.Output(w, ``, ``, false)
 	if e != nil {
 		panic(e)
 	}
 	b := w.Bytes()
 	return BytesToString(b)
 }
-func (f *File) Output(writer io.Writer, prefix, indent string) (n int64, e error) {
+func (f *File) Output(writer io.Writer, prefix, indent string, all bool) (n int64, e error) {
 	w := writerTo{w: writer}
 	_, e = w.WriteString(prefix + `file: ` + f.Name + "\n")
 	if e != nil {
@@ -116,20 +116,29 @@ func (f *File) Output(writer io.Writer, prefix, indent string) (n int64, e error
 		}
 	}
 	for _, node := range f.Consts {
-		_, e = node.Output(&w, prefix, indent)
+		if !all && !node.IsExport() {
+			continue
+		}
+		_, e = node.Output(&w, prefix, indent, all)
 		if e != nil {
 			n = w.n
 			return
 		}
 	}
 	for _, node := range f.Vars {
-		_, e = node.Output(&w, prefix, indent)
+		if !all && !node.IsExport() {
+			continue
+		}
+		_, e = node.Output(&w, prefix, indent, all)
 		if e != nil {
 			n = w.n
 			return
 		}
 	}
 	for _, node := range f.Interfaces {
+		if !all && !node.IsExport() {
+			continue
+		}
 		_, e = node.Output(&w, prefix, indent)
 		if e != nil {
 			n = w.n
@@ -137,6 +146,9 @@ func (f *File) Output(writer io.Writer, prefix, indent string) (n int64, e error
 		}
 	}
 	for _, node := range f.Alias {
+		if !all && !node.IsExport() {
+			continue
+		}
 		_, e = w.WriteString(prefix + node.String() + "\n")
 		if e != nil {
 			n = w.n
@@ -144,13 +156,19 @@ func (f *File) Output(writer io.Writer, prefix, indent string) (n int64, e error
 		}
 	}
 	for _, node := range f.Structs {
-		_, e = node.Output(&w, prefix, indent)
+		if !all && !node.IsExport() {
+			continue
+		}
+		_, e = node.Output(&w, prefix, indent, all)
 		if e != nil {
 			n = w.n
 			return
 		}
 	}
 	for _, node := range f.Funcs {
+		if !all && !node.IsExport() {
+			continue
+		}
 		_, e = w.WriteString(prefix + node.String() + "\n")
 		if e != nil {
 			n = w.n

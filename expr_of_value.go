@@ -31,6 +31,8 @@ func (v *ValueExpr) String() string {
 		return NewBinaryExpr(t).String()
 	case *ast.UnaryExpr:
 		return t.Op.String() + NewValueExpr(t.X).String()
+	case *ast.CompositeLit:
+		return NewTypeExpr(t.Type).TypeString() + `{}`
 	default:
 		panic(`unknow value type` + reflect.TypeOf(t).String())
 	}

@@ -45,7 +45,7 @@ func (p *Package) Name() string {
 // 返回人類友好的字符串
 func (p *Package) String() string {
 	w := bytes.NewBuffer(make([]byte, 0, 1024))
-	_, e := p.Output(w, ` - `, `  `)
+	_, e := p.Output(w, ` - `, `  `, false)
 	if e != nil {
 		panic(e)
 	}
@@ -54,7 +54,7 @@ func (p *Package) String() string {
 }
 
 // 將人類友好字符串寫入到 writer
-func (p *Package) Output(writer io.Writer, prefix, indent string) (n int64, e error) {
+func (p *Package) Output(writer io.Writer, prefix, indent string, all bool) (n int64, e error) {
 	w := writerTo{w: writer}
 	_, e = w.WriteString(prefix + `package ` + p.Name() + "\n")
 	if e != nil {
@@ -63,7 +63,7 @@ func (p *Package) Output(writer io.Writer, prefix, indent string) (n int64, e er
 	}
 	prefix += indent
 	for _, f := range p.Files {
-		_, e = f.Output(&w, prefix, indent)
+		_, e = f.Output(&w, prefix, indent, all)
 		if e != nil {
 			n = w.n
 			return
