@@ -2,7 +2,6 @@ package gocode
 
 import (
 	"bytes"
-	"fmt"
 	"go/ast"
 	"go/token"
 	"io"
@@ -20,6 +19,14 @@ type File struct {
 	Structs []*Struct
 	// 定義的 interface
 	Interfaces []*Interface
+	// 定義的別名 type xxx xxx
+	Alias []*Alias
+	// 定義的常量
+	Consts []*Const
+	// 定義的變量
+	Vars []*Var
+	// 定義的函數
+	Funcs []*Func
 }
 
 func NewFile(name string, f *ast.File) *File {
@@ -28,6 +35,10 @@ func NewFile(name string, f *ast.File) *File {
 		imports    []*Import
 		structs    []*Struct
 		interfaces []*Interface
+		alias      []*Alias
+		consts     []*Const
+		vars       []*Var
+		funcs      []*Func
 	)
 	if size > 0 {
 		imports = make([]*Import, size)
@@ -36,56 +47,36 @@ func NewFile(name string, f *ast.File) *File {
 		}
 	}
 
-	keysStruct := make(map[string]*Struct)
-	keysInterface := make(map[string]*Interface)
 	for _, decl := range f.Decls {
 		switch node := decl.(type) {
 		case *ast.GenDecl:
 			switch node.Tok {
 			case token.IMPORT:
 			case token.CONST:
-				fmt.Println(`CONST`)
+				consts = append(consts, NewConst(node.Specs))
 			case token.VAR:
-				fmt.Println(`VAR`)
+				vars = append(vars, NewVar(node.Specs))
 			case token.TYPE:
 				for _, spec := range node.Specs {
 					tspec := spec.(*ast.TypeSpec)
 					name := tspec.Name.Name
 					switch t := tspec.Type.(type) {
 					case *ast.StructType:
-						if _, ok := keysStruct[name]; ok {
-							panic(`struct alreay exists: ` + name)
-						}
-						keysStruct[name] = NewStruct(name, t)
+						structs = append(structs, NewStruct(name, t))
 					case *ast.InterfaceType:
-						if _, ok := keysInterface[name]; ok {
-							panic(`interface alreay exists: ` + name)
-						}
-						keysInterface[name] = NewInterface(name, t)
+						interfaces = append(interfaces, NewInterface(name, t))
 					default:
-						fmt.Println(reflect.TypeOf(t))
+						alias = append(alias, NewAlias(name, t))
+						// panic(`unknow type: ` + reflect.TypeOf(t).String())
 					}
 				}
 			default:
 				panic(`unknow token: ` + node.Tok.String())
 			}
 		case *ast.FuncDecl:
+			funcs = append(funcs, NewFunc(node))
 		default:
-			panic(reflect.TypeOf(decl))
-		}
-	}
-	size = len(keysStruct)
-	if size > 0 {
-		structs = make([]*Struct, 0, size)
-		for _, v := range keysStruct {
-			structs = append(structs, v)
-		}
-	}
-	size = len(keysInterface)
-	if size > 0 {
-		interfaces = make([]*Interface, 0, size)
-		for _, v := range keysInterface {
-			interfaces = append(interfaces, v)
+			panic(`unknow decl: ` + reflect.TypeOf(decl).String())
 		}
 	}
 	return &File{
@@ -94,6 +85,10 @@ func NewFile(name string, f *ast.File) *File {
 		Imports:    imports,
 		Structs:    structs,
 		Interfaces: interfaces,
+		Alias:      alias,
+		Consts:     consts,
+		Vars:       vars,
+		Funcs:      funcs,
 	}
 }
 func (f *File) String() string {
@@ -107,14 +102,42 @@ func (f *File) String() string {
 }
 func (f *File) Output(writer io.Writer, prefix, indent string) (n int64, e error) {
 	w := writerTo{w: writer}
-	_, e = w.WriterString(prefix + `file: ` + f.Name + "\n")
+	_, e = w.WriteString(prefix + `file: ` + f.Name + "\n")
 	if e != nil {
 		n = w.n
 		return
 	}
 	prefix += indent
 	for _, node := range f.Imports {
-		_, e = w.WriterString(prefix + node.String() + "\n")
+		_, e = w.WriteString(prefix + node.String() + "\n")
+		if e != nil {
+			n = w.n
+			return
+		}
+	}
+	for _, node := range f.Consts {
+		_, e = node.Output(&w, prefix, indent)
+		if e != nil {
+			n = w.n
+			return
+		}
+	}
+	for _, node := range f.Vars {
+		_, e = node.Output(&w, prefix, indent)
+		if e != nil {
+			n = w.n
+			return
+		}
+	}
+	for _, node := range f.Interfaces {
+		_, e = node.Output(&w, prefix, indent)
+		if e != nil {
+			n = w.n
+			return
+		}
+	}
+	for _, node := range f.Alias {
+		_, e = w.WriteString(prefix + node.String() + "\n")
 		if e != nil {
 			n = w.n
 			return
@@ -127,14 +150,13 @@ func (f *File) Output(writer io.Writer, prefix, indent string) (n int64, e error
 			return
 		}
 	}
-	// for _, node := range f.Interfaces {
-	// 	_, e = node.Output(&w, prefix, indent)
-	// 	if e != nil {
-	// 		n = w.n
-	// 		return
-	// 	}
-	// }
-
+	for _, node := range f.Funcs {
+		_, e = w.WriteString(prefix + node.String() + "\n")
+		if e != nil {
+			n = w.n
+			return
+		}
+	}
 	n = w.n
 	return
 }

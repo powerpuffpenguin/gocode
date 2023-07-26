@@ -56,7 +56,7 @@ func (p *Package) String() string {
 // 將人類友好字符串寫入到 writer
 func (p *Package) Output(writer io.Writer, prefix, indent string) (n int64, e error) {
 	w := writerTo{w: writer}
-	_, e = w.WriterString(prefix + `package ` + p.Name() + "\n")
+	_, e = w.WriteString(prefix + `package ` + p.Name() + "\n")
 	if e != nil {
 		n = w.n
 		return
@@ -78,7 +78,7 @@ type writerTo struct {
 	n int64
 }
 
-func (w *writerTo) WriterString(s string) (n int, e error) {
+func (w *writerTo) WriteString(s string) (n int, e error) {
 	n, e = w.w.Write(StringToBytes(s))
 	w.n += int64(n)
 	return

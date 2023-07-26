@@ -14,6 +14,11 @@ func NewFuncType(tp *ast.FuncType) *FuncType {
 	return &FuncType{Type: tp}
 }
 func (t *FuncType) TypeString() string {
+	return `func` + t.ParamsAndResults()
+}
+
+// 返回參數和返回值定義
+func (t *FuncType) ParamsAndResults() string {
 	var params []string
 	if t.Type.Params != nil {
 		for _, f := range t.Type.Params.List {
@@ -40,7 +45,7 @@ func (t *FuncType) TypeString() string {
 			}
 		}
 	}
-	s := `func(` + strings.Join(params, `, `) + `)`
+	s := `(` + strings.Join(params, `, `) + `)`
 	switch len(results) {
 	case 0:
 	case 1:

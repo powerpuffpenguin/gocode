@@ -2,10 +2,61 @@ package rpc
 
 import (
 	"bytes"
+	"errors"
 	"io"
+	"net"
+	"net/http"
 )
 
-type Options struct{}
+type SS io.ByteReader
+type SP *io.ByteReader
+type SF func()
+type SM map[string]int
+type State uint
+
+const (
+	S0 State = 1
+	S1
+	S3 = iota + 10*10
+	S4
+	S5, S6 = 7, 9
+)
+
+func abc() (int, int) {
+	return 1, 2
+}
+
+const (
+	X0 = 0
+	X1
+	X3 = -1 + iota + 10*10
+	X4
+)
+const SX0, SX1 = uint32(100), int32(99)
+const S64 uint64 = 100
+const S = "ko"
+const NotFound = http.StatusNotFound
+
+var (
+	V0     uint32 = 0
+	V1            = 1
+	V2, V3        = 2, 3 + 1
+	V4            = http.StateNew
+	Err           = errors.New("abc")
+	X5, X6        = abc()
+	X7            = &X6
+)
+
+var ErrK0 = errors.New(`ko`)
+
+type Callback func(data string) bool
+type KO interface {
+}
+type Options interface {
+	KO
+	io.WriteCloser
+	Addr() net.Addr
+}
 type Server struct {
 	Options
 
@@ -38,4 +89,12 @@ type Server struct {
 
 	FR  func() int
 	FRN func() (id int)
+}
+
+func (s *Server) Serve() (e error) {
+	s.abc()
+	return
+}
+func (s Server) abc() (e error) {
+	return
 }

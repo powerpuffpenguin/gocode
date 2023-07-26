@@ -46,7 +46,7 @@ func (s *Struct) String() string {
 }
 func (s *Struct) Output(writer io.Writer, prefix, indent string) (n int64, e error) {
 	w := writerTo{w: writer}
-	_, e = w.WriterString(prefix + `type ` + s.Name + " struct {\n")
+	_, e = w.WriteString(prefix + `type ` + s.Name + " struct {\n")
 	if e != nil {
 		n = w.n
 		return
@@ -54,9 +54,9 @@ func (s *Struct) Output(writer io.Writer, prefix, indent string) (n int64, e err
 	p := prefix
 	prefix += indent
 	for _, node := range s.Fields {
-		w.WriterString(prefix + node.Output("\t") + "\n")
+		w.WriteString(prefix + node.Output("\t") + "\n")
 	}
-	_, e = w.WriterString(p + "}\n")
+	_, e = w.WriteString(p + "}\n")
 	n = w.n
 	return
 }
