@@ -8,4 +8,4 @@ export GOARCH=amd64
 
 go build
 
-tar -zcvf gocode.tar.gz gocode
+tar -zcvf linux_amd64.tar.gz gocode
