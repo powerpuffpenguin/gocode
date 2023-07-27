@@ -29,6 +29,18 @@ type File struct {
 	Funcs []*Func
 }
 
+func isTemplateRecv(expr ast.Expr) bool {
+	switch t := expr.(type) {
+	case *ast.IndexListExpr:
+		return true
+	case *ast.IndexExpr:
+		return true
+	case *ast.StarExpr:
+		return isTemplateRecv(t.X)
+	default:
+		return false
+	}
+}
 func NewFile(name string, f *ast.File) *File {
 	var (
 		size       = len(f.Imports)
@@ -59,12 +71,18 @@ func NewFile(name string, f *ast.File) *File {
 			case token.TYPE:
 				for _, spec := range node.Specs {
 					tspec := spec.(*ast.TypeSpec)
+					if tspec.TypeParams != nil { // 暫不支持模板分析
+						continue
+					}
 					name := tspec.Name.Name
 					switch t := tspec.Type.(type) {
 					case *ast.StructType:
 						structs = append(structs, NewStruct(name, t))
 					case *ast.InterfaceType:
-						interfaces = append(interfaces, NewInterface(name, t))
+						it := NewInterface(name, t)
+						if !it.IsTemplate() {
+							interfaces = append(interfaces, it)
+						}
 					default:
 						alias = append(alias, NewAlias(name, t))
 						// panic(`unknow type: ` + reflect.TypeOf(t).String())
@@ -74,7 +92,17 @@ func NewFile(name string, f *ast.File) *File {
 				panic(`unknow token: ` + node.Tok.String())
 			}
 		case *ast.FuncDecl:
-			funcs = append(funcs, NewFunc(node))
+			// 暫不支持模板函數分析
+			if node.Type.TypeParams == nil {
+				if node.Recv == nil {
+					funcs = append(funcs, NewFunc(node))
+				} else {
+					if len(node.Recv.List) == 1 &&
+						!isTemplateRecv(node.Recv.List[0].Type) {
+						funcs = append(funcs, NewFunc(node))
+					}
+				}
+			}
 		default:
 			panic(`unknow decl: ` + reflect.TypeOf(decl).String())
 		}
@@ -101,6 +129,11 @@ func (f *File) String() string {
 	return BytesToString(b)
 }
 func (f *File) Output(writer io.Writer, prefix, indent string, all bool) (n int64, e error) {
+	defer func() {
+		if e := recover(); e != nil {
+			panic(f.Name)
+		}
+	}()
 	w := writerTo{w: writer}
 	_, e = w.WriteString(prefix + `file: ` + f.Name + "\n")
 	if e != nil {

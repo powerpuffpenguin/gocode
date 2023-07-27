@@ -26,12 +26,18 @@ func (b *BinaryExpr) String() string {
 		switch t := expr.(type) {
 		case *ast.Ident:
 			s = t.Name
+		case *ast.SelectorExpr:
+			s = NewSelectorExpr(t).TypeString()
 		case *ast.BasicLit:
 			s = t.Value
 		case *ast.BinaryExpr:
 			s = NewBinaryExpr(t).String()
 		case *ast.UnaryExpr:
 			s = t.Op.String() + NewValueExpr(t.X).String()
+		case *ast.ParenExpr:
+			s = `(` + NewValueExpr(t.X).String() + `)`
+		case *ast.CallExpr:
+			s = NewCallExpr(t).String()
 		default:
 			panic(`unknow x type` + reflect.TypeOf(t).String())
 		}

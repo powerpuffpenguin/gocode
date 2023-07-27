@@ -108,3 +108,6 @@ func (s Server) abc() (e error) {
 type animal struct{}
 
 func (a *animal) Eat() {}
+
+var Flags = []byte("123")
+var Map = map[string]string{"12": "34"}

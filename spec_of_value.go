@@ -35,7 +35,7 @@ func (v *ValueSpec) Output(all bool) (s string, e error) {
 				return
 			}
 		}
-		if IsExport(name.Name) {
+		if all || IsExport(name.Name) {
 			_, e = w.WriteString(name.Name)
 		} else {
 			_, e = w.WriteString(`_`)
@@ -45,7 +45,9 @@ func (v *ValueSpec) Output(all bool) (s string, e error) {
 		}
 	}
 	if spec.Type != nil {
-		_, e = w.WriteString(` ` + spec.Type.(*ast.Ident).Name)
+
+		_, e = w.WriteString(` ` + NewTypeExpr(spec.Type).TypeString())
+		// _, e = w.WriteString(` ` + spec.Type.(*ast.Ident).Name)
 		if e != nil {
 			return
 		}

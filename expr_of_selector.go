@@ -2,6 +2,7 @@ package gocode
 
 import (
 	"go/ast"
+	"reflect"
 )
 
 // 表示一個選擇表達式
@@ -18,5 +19,12 @@ func NewSelectorExpr(expr *ast.SelectorExpr) *SelectorExpr {
 // 返回類型字符串
 func (e *SelectorExpr) TypeString() string {
 	t := e.Expr
-	return t.X.(*ast.Ident).Name + `.` + t.Sel.Name
+	switch tx := t.X.(type) {
+	case *ast.Ident:
+		return tx.Name + `.` + t.Sel.Name
+	case *ast.SelectorExpr:
+		return NewSelectorExpr(tx).TypeString() + `.` + t.Sel.Name
+	default:
+		panic(`unknow SelectorExpr.X.type ` + reflect.TypeOf(tx).String())
+	}
 }

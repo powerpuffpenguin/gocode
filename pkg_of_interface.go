@@ -17,6 +17,18 @@ func NewInterface(name string, it *ast.InterfaceType) *Interface {
 		Name: name,
 	}
 }
+func (it *Interface) IsTemplate() bool {
+	for _, node := range it.AST.Methods.List {
+		switch node.Type.(type) {
+		case *ast.Ident:
+		case *ast.SelectorExpr:
+		case *ast.FuncType:
+		default:
+			return true
+		}
+	}
+	return false
+}
 func (it *Interface) IsExport() bool {
 	return IsExport(it.Name)
 }

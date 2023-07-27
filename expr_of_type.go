@@ -1,8 +1,10 @@
 package gocode
 
 import (
+	"fmt"
 	"go/ast"
 	"reflect"
+	"strings"
 )
 
 // 表示一個型別
@@ -30,6 +32,27 @@ func typeString(tag string, expr ast.Expr) string {
 		return NewMapType(t).TypeString()
 	case *ast.FuncType:
 		return NewFuncType(t).TypeString()
+	case *ast.StructType:
+		// NewStruct(``, t).Output()
+		return "struct{}"
+	case *ast.Ellipsis:
+		return `...` + NewTypeExpr(t.Elt).TypeString()
+	case *ast.InterfaceType:
+		return `interface{}`
+	case *ast.ChanType:
+		return NewChanType(t).TypeString()
+	case *ast.ParenExpr:
+		return `(` + NewTypeExpr(t.X).TypeString() + `)`
+	case *ast.IndexListExpr: // 模板
+		strs := make([]string, len(t.Indices))
+		for i, v := range t.Indices {
+			strs[i] = NewTypeExpr(v).TypeString()
+		}
+		return fmt.Sprintf(`%s[%s]`, NewTypeExpr(t.X).TypeString(), strings.Join(strs, ", "))
+	case *ast.BasicLit:
+		return t.Value
+	case *ast.IndexExpr: // 模板
+		return fmt.Sprintf(`%s[%s]`, NewTypeExpr(t.X).TypeString(), NewTypeExpr(t.Index).TypeString())
 	default:
 		panic(`unknow ` + tag + `: ` + reflect.TypeOf(t).String())
 	}
@@ -37,20 +60,5 @@ func typeString(tag string, expr ast.Expr) string {
 
 // 返回類型字符串
 func (e *TypeExpr) TypeString() string {
-	switch t := e.Expr.(type) {
-	case *ast.Ident: // 標識，基礎類型
-		return NewIdent(t).TypeString()
-	case *ast.SelectorExpr:
-		return NewSelectorExpr(t).TypeString()
-	case *ast.StarExpr: // 指針
-		return NewStarExpr(t).TypeString()
-	case *ast.ArrayType: // 切片
-		return NewArrayType(t).TypeString()
-	case *ast.MapType: // hash 表
-		return NewMapType(t).TypeString()
-	case *ast.FuncType: // 函數
-		return NewFuncType(t).TypeString()
-	default:
-		panic(`unknow field t type: ` + reflect.TypeOf(t).String())
-	}
+	return typeString(`field`, e.Expr)
 }
